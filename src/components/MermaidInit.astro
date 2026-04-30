@@ -72,10 +72,9 @@
     },
   });
 
-  // Find mermaid code blocks and render them
-  document.querySelectorAll('pre > code.language-mermaid').forEach(async (el) => {
-    const code = el.textContent || '';
-    const pre = el.parentElement!;
+  // Find mermaid code blocks (Shiki renders as <pre data-language="mermaid">)
+  document.querySelectorAll('pre[data-language="mermaid"]').forEach(async (pre) => {
+    const code = pre.textContent || '';
     const container = document.createElement('div');
     container.className = 'mermaid-diagram';
     const id = `mermaid-${Math.random().toString(36).slice(2, 8)}`;
