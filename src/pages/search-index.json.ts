@@ -2,7 +2,7 @@ import { getCollection } from 'astro:content';
 import { slugify } from '../lib/slugify';
 
 export async function GET() {
-  const notes = await getCollection('notes', ({ data }) => data.public !== false);
+  const notes = await getCollection('notes', ({ id, data }) => id !== 'index' && data.public !== false);
 
   const index = notes.map((note) => ({
     slug: slugify(note.id),

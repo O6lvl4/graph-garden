@@ -28,7 +28,7 @@ export async function getStaticPaths() {
   }
 
   return notes
-    .filter((note) => note.data.public !== false)
+    .filter((note) => note.id !== 'index' && note.data.public !== false)
     .map((note) => ({
       params: { slug: slugify(note.id) },
       props: {

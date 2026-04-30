@@ -1,20 +1,36 @@
 ---
-import { getCollection } from 'astro:content';
+import { getCollection, render } from 'astro:content';
 import Base from '../layouts/Base.astro';
 import { slugify } from '../lib/slugify';
 
-const notes = await getCollection('notes', ({ data }) => data.public !== false);
+// Render index.md as the home page
+const allNotes = await getCollection('notes');
+const indexNote = allNotes.find((n) => n.id === 'index');
+const notes = allNotes.filter(
+  (n) => n.id !== 'index' && n.data.public !== false
+);
 const sorted = notes.sort((a, b) => {
   const ta = a.data.title || a.id;
   const tb = b.data.title || b.id;
   return ta.localeCompare(tb);
 });
 const base = import.meta.env.BASE_URL.replace(/\/?$/, '/');
+
+let IndexContent: any = null;
+if (indexNote) {
+  const rendered = await render(indexNote);
+  IndexContent = rendered.Content;
+}
 ---
 
-<Base title="Notes">
+<Base title="Home">
+  {IndexContent && (
+    <article>
+      <IndexContent />
+    </article>
+  )}
   <div class="note-list">
-    <h1>Notes</h1>
+    <h2>All Notes</h2>
     {
       sorted.map((note) => (
         <a href={`${base}notes/${slugify(note.id)}`} class="note-card">
