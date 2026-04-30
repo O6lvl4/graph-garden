@@ -13,6 +13,7 @@ export async function getStaticPaths() {
   const backlinkMap = new Map<string, { id: string; title: string }[]>();
 
   for (const note of notes) {
+    if (note.id === 'index') continue; // auto-generated index is not a meaningful backlink
     const links = extractWikilinks(note.body || '');
     for (const link of links) {
       const targetSlug = slugify(link);
