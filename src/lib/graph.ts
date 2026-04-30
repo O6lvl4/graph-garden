@@ -16,6 +16,7 @@ export interface GraphNode {
   id: string;
   label: string;
   tags: string[];
+  excerpt: string;
 }
 
 export interface GraphLink {
@@ -35,6 +36,12 @@ export function buildGraphData(
     id: slugify(note.id),
     label: note.data.title || note.id,
     tags: note.data.tags || [],
+    excerpt: (note.body || '')
+      .replace(/\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g, (_: string, t: string, d: string) => d || t)
+      .replace(/[#*`>\[\]!-]/g, '')
+      .replace(/```[\s\S]*?```/g, '')
+      .trim()
+      .slice(0, 120),
   }));
 
   const nodeIds = new Set(nodes.map((n) => n.id));

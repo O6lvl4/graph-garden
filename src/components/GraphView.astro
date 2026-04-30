@@ -1,10 +1,15 @@
 <div class="graph-page">
+  <div class="graph-toolbar">
+    <input type="text" id="graph-search" placeholder="Filter nodes..." autocomplete="off" />
+  </div>
   <canvas id="graph-canvas" class="graph-canvas"></canvas>
+  <div id="graph-tooltip" class="graph-tooltip"></div>
   <div class="graph-controls">
     <button id="graph-zoom-in" type="button" title="Zoom in">+</button>
     <button id="graph-zoom-out" type="button" title="Zoom out">&minus;</button>
     <button id="graph-center" type="button" title="Center">&#9675;</button>
   </div>
+  <div id="graph-legend" class="graph-legend"></div>
 </div>
 
 <script>
@@ -22,19 +27,42 @@
   const base = import.meta.env.BASE_URL.replace(/\/?$/, '/');
   const canvas = document.getElementById('graph-canvas') as HTMLCanvasElement;
   const ctx = canvas.getContext('2d')!;
+  const tooltip = document.getElementById('graph-tooltip')!;
+  const searchInput = document.getElementById('graph-search') as HTMLInputElement;
+  const legendEl = document.getElementById('graph-legend')!;
+
+  // Catppuccin Mocha palette for tag coloring
+  const TAG_COLORS = [
+    '#cba6f7', '#89b4fa', '#a6e3a1', '#f9e2af', '#fab387',
+    '#f38ba8', '#89dceb', '#f5c2e7', '#94e2d5', '#74c7ec',
+  ];
+  const tagColorMap = new Map<string, string>();
+  let tagColorIdx = 0;
+
+  function tagColor(tag: string): string {
+    if (!tagColorMap.has(tag)) {
+      tagColorMap.set(tag, TAG_COLORS[tagColorIdx % TAG_COLORS.length]);
+      tagColorIdx++;
+    }
+    return tagColorMap.get(tag)!;
+  }
 
   const colors = {
     bg: '#1e1e2e',
-    node: '#cba6f7',
-    nodeHover: '#f5c2e7',
     edge: '#585b70',
+    edgeHighlight: '#89b4fa',
     text: '#cdd6f4',
     textMuted: '#6c7086',
+    dimNode: '#45475a',
+    dimEdge: '#313244',
   };
 
   interface GNode {
     id: string;
     label: string;
+    tags: string[];
+    excerpt: string;
+    linkCount: number;
     x?: number;
     y?: number;
     vx?: number;
@@ -52,7 +80,32 @@
   let links: GLink[] = [];
   let currentTransform: ZoomTransform = zoomIdentity;
   let hoveredNode: GNode | null = null;
+  let searchQuery = '';
   let simulation: ReturnType<typeof forceSimulation> | null = null;
+
+  function nodeRadius(n: GNode): number {
+    return Math.max(4, Math.min(14, 4 + n.linkCount * 1.5));
+  }
+
+  function nodeColor(n: GNode): string {
+    if (n.tags.length > 0) return tagColor(n.tags[0]);
+    return '#cba6f7';
+  }
+
+  function isMatched(n: GNode): boolean {
+    if (!searchQuery) return true;
+    const q = searchQuery;
+    return n.label.toLowerCase().includes(q) ||
+      n.tags.some(t => t.toLowerCase().includes(q));
+  }
+
+  function isConnectedTo(node: GNode, other: GNode): boolean {
+    return links.some(l => {
+      const s = (l.source as GNode).id;
+      const t = (l.target as GNode).id;
+      return (s === node.id && t === other.id) || (s === other.id && t === node.id);
+    });
+  }
 
   function cssSize() {
     const rect = canvas.getBoundingClientRect();
@@ -78,32 +131,42 @@
     ctx.translate(currentTransform.x, currentTransform.y);
     ctx.scale(currentTransform.k, currentTransform.k);
 
-    // Edges (directed arrows)
-    ctx.strokeStyle = colors.edge;
-    ctx.fillStyle = colors.edge;
-    ctx.lineWidth = 1;
-    ctx.globalAlpha = 0.5;
-    const arrowSize = 6;
-    const nodeRadius = 5;
+    const hasHover = hoveredNode !== null;
+    const hasSearch = searchQuery.length > 0;
+
+    // Edges
+    const arrowSize = 5;
     for (const link of links) {
       const s = link.source as GNode;
       const t = link.target as GNode;
       if (s.x == null || s.y == null || t.x == null || t.y == null) continue;
+
+      const isHighlighted = hasHover &&
+        (s === hoveredNode || t === hoveredNode);
+      const isDimmed = hasSearch && (!isMatched(s) || !isMatched(t));
+
+      ctx.strokeStyle = isHighlighted ? colors.edgeHighlight
+        : isDimmed ? colors.dimEdge : colors.edge;
+      ctx.lineWidth = isHighlighted ? 2 : 1;
+      ctx.globalAlpha = isDimmed ? 0.15 : isHighlighted ? 0.9 : 0.4;
+
       const dx = t.x - s.x;
       const dy = t.y - s.y;
       const len = Math.sqrt(dx * dx + dy * dy);
       if (len === 0) continue;
       const ux = dx / len;
       const uy = dy / len;
-      // Shorten line to stop at node edge
-      const endX = t.x - ux * (nodeRadius + 2);
-      const endY = t.y - uy * (nodeRadius + 2);
-      // Line
+      const tr = nodeRadius(t);
+      const endX = t.x - ux * (tr + 2);
+      const endY = t.y - uy * (tr + 2);
+
       ctx.beginPath();
       ctx.moveTo(s.x, s.y);
       ctx.lineTo(endX, endY);
       ctx.stroke();
-      // Arrowhead
+
+      // Arrow
+      ctx.fillStyle = ctx.strokeStyle;
       const angle = Math.atan2(dy, dx);
       ctx.beginPath();
       ctx.moveTo(endX, endY);
@@ -118,25 +181,49 @@
       ctx.closePath();
       ctx.fill();
     }
-    ctx.globalAlpha = 1;
 
     // Nodes
     for (const node of nodes) {
       if (node.x == null || node.y == null) continue;
-      const isHov = hoveredNode === node;
-      const r = isHov ? 7 : 5;
 
+      const isHov = hoveredNode === node;
+      const isNeighbor = hasHover && hoveredNode && isConnectedTo(hoveredNode, node);
+      const matched = isMatched(node);
+      const isDimmed = (hasHover && !isHov && !isNeighbor) || (hasSearch && !matched);
+
+      const r = nodeRadius(node);
+      const drawR = isHov ? r + 3 : r;
+
+      ctx.globalAlpha = isDimmed ? 0.15 : 1;
+
+      // Glow for hovered node
+      if (isHov) {
+        ctx.beginPath();
+        ctx.arc(node.x, node.y, drawR + 6, 0, Math.PI * 2);
+        ctx.fillStyle = nodeColor(node);
+        ctx.globalAlpha = 0.15;
+        ctx.fill();
+        ctx.globalAlpha = 1;
+      }
+
+      // Node circle
       ctx.beginPath();
-      ctx.arc(node.x, node.y, r, 0, Math.PI * 2);
-      ctx.fillStyle = isHov ? colors.nodeHover : colors.node;
+      ctx.arc(node.x, node.y, drawR, 0, Math.PI * 2);
+      ctx.fillStyle = isDimmed ? colors.dimNode : nodeColor(node);
       ctx.fill();
 
-      ctx.fillStyle = isHov ? colors.text : colors.textMuted;
-      ctx.font = `${isHov ? 12 : 10}px -apple-system, sans-serif`;
-      ctx.textAlign = 'center';
-      ctx.fillText(node.label, node.x, node.y + r + 14);
+      // Label
+      const showLabel = isHov || isNeighbor || currentTransform.k > 0.8;
+      if (showLabel) {
+        ctx.fillStyle = isDimmed ? colors.dimNode
+          : isHov ? colors.text : colors.textMuted;
+        ctx.font = `${isHov ? '600 12' : '10'}px -apple-system, sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.fillText(node.label, node.x, node.y + drawR + 14);
+      }
     }
 
+    ctx.globalAlpha = 1;
     ctx.restore();
   }
 
@@ -145,18 +232,45 @@
     for (let i = nodes.length - 1; i >= 0; i--) {
       const n = nodes[i];
       if (n.x == null || n.y == null) continue;
+      const r = nodeRadius(n) + 3;
       const dx = gx - n.x;
       const dy = gy - n.y;
-      if (dx * dx + dy * dy < 100) return n;
+      if (dx * dx + dy * dy < r * r) return n;
     }
     return null;
   }
 
-  // Hover
+  // Hover with tooltip
   canvas.addEventListener('mousemove', (e) => {
     const rect = canvas.getBoundingClientRect();
-    hoveredNode = nodeAt(e.clientX - rect.left, e.clientY - rect.top);
+    const mx = e.clientX - rect.left;
+    const my = e.clientY - rect.top;
+    const prev = hoveredNode;
+    hoveredNode = nodeAt(mx, my);
     canvas.style.cursor = hoveredNode ? 'pointer' : 'grab';
+
+    if (hoveredNode && hoveredNode !== prev) {
+      tooltip.innerHTML = `<strong>${esc(hoveredNode.label)}</strong>` +
+        (hoveredNode.tags.length ? `<span class="graph-tooltip-tags">${hoveredNode.tags.map(t => `<span class="tag">${esc(t)}</span>`).join('')}</span>` : '') +
+        (hoveredNode.excerpt ? `<p>${esc(hoveredNode.excerpt)}</p>` : '');
+      tooltip.style.display = 'block';
+    }
+
+    if (hoveredNode) {
+      const tx = Math.min(e.clientX + 12, window.innerWidth - 280);
+      const ty = Math.min(e.clientY + 12, window.innerHeight - 100);
+      tooltip.style.left = tx + 'px';
+      tooltip.style.top = ty + 'px';
+    } else {
+      tooltip.style.display = 'none';
+    }
+
+    if (hoveredNode !== prev) draw();
+  });
+
+  canvas.addEventListener('mouseleave', () => {
+    hoveredNode = null;
+    tooltip.style.display = 'none';
     draw();
   });
 
@@ -165,6 +279,12 @@
     const rect = canvas.getBoundingClientRect();
     const node = nodeAt(e.clientX - rect.left, e.clientY - rect.top);
     if (node) window.location.href = `${base}notes/${node.id}`;
+  });
+
+  // Search / filter
+  searchInput.addEventListener('input', () => {
+    searchQuery = searchInput.value.trim().toLowerCase();
+    draw();
   });
 
   // Zoom & pan
@@ -187,12 +307,37 @@
     select(canvas).transition().duration(300).call(zoomBehavior.transform, zoomIdentity);
   });
 
+  // Build legend
+  function buildLegend() {
+    const tags = [...tagColorMap.entries()];
+    if (tags.length === 0) return;
+    legendEl.innerHTML = tags.map(([tag, color]) =>
+      `<span class="graph-legend-item"><span class="graph-legend-dot" style="background:${color}"></span>${esc(tag)}</span>`
+    ).join('');
+  }
+
   // Load data
   fetch(`${base}graph-data.json`)
     .then((r) => r.json())
     .then((data) => {
       nodes = data.nodes;
       links = data.links;
+
+      // Compute link counts
+      const counts = new Map<string, number>();
+      for (const link of data.links) {
+        counts.set(link.source, (counts.get(link.source) || 0) + 1);
+        counts.set(link.target, (counts.get(link.target) || 0) + 1);
+      }
+      for (const node of nodes) {
+        node.linkCount = counts.get(node.id) || 0;
+      }
+
+      // Pre-compute tag colors
+      for (const node of nodes) {
+        for (const tag of node.tags) tagColor(tag);
+      }
+      buildLegend();
 
       const { w, h } = cssSize();
       simulation = forceSimulation(nodes as any)
@@ -204,9 +349,13 @@
         )
         .force('charge', forceManyBody().strength(-300))
         .force('center', forceCenter(w / 2, h / 2))
-        .force('collide', forceCollide(25))
+        .force('collide', forceCollide().radius((d: any) => nodeRadius(d) + 8))
         .on('tick', draw);
     });
+
+  function esc(s: string): string {
+    return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
 
   resize();
   window.addEventListener('resize', resize);

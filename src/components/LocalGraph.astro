@@ -1,0 +1,256 @@
+---
+interface Props {
+  slug: string;
+}
+const { slug } = Astro.props;
+---
+
+<div class="local-graph" data-slug={slug}>
+  <div class="local-graph-header">
+    <span class="local-graph-title">Graph</span>
+    <div class="local-graph-depth">
+      <button type="button" data-depth="1" class="active">1</button>
+      <button type="button" data-depth="2">2</button>
+      <button type="button" data-depth="3">3</button>
+    </div>
+  </div>
+  <canvas class="local-graph-canvas"></canvas>
+</div>
+
+<script>
+  import {
+    forceSimulation,
+    forceLink,
+    forceManyBody,
+    forceCenter,
+    forceCollide,
+  } from 'd3-force';
+  import { zoom, zoomIdentity } from 'd3-zoom';
+  import { select } from 'd3-selection';
+  import type { ZoomTransform } from 'd3-zoom';
+
+  const TAG_COLORS = [
+    '#cba6f7', '#89b4fa', '#a6e3a1', '#f9e2af', '#fab387',
+    '#f38ba8', '#89dceb', '#f5c2e7', '#94e2d5', '#74c7ec',
+  ];
+  const tagColorMap = new Map<string, string>();
+  let tagIdx = 0;
+  function tagColor(tag: string): string {
+    if (!tagColorMap.has(tag)) {
+      tagColorMap.set(tag, TAG_COLORS[tagIdx % TAG_COLORS.length]);
+      tagIdx++;
+    }
+    return tagColorMap.get(tag)!;
+  }
+
+  const base = import.meta.env.BASE_URL.replace(/\/?$/, '/');
+
+  interface GNode {
+    id: string;
+    label: string;
+    tags: string[];
+    x?: number;
+    y?: number;
+    vx?: number;
+    vy?: number;
+    fx?: number | null;
+    fy?: number | null;
+  }
+
+  interface GLink {
+    source: string | GNode;
+    target: string | GNode;
+  }
+
+  const container = document.querySelector('.local-graph') as HTMLDivElement;
+  if (container) {
+    const slug = container.dataset.slug!;
+    const canvas = container.querySelector('.local-graph-canvas') as HTMLCanvasElement;
+    const ctx = canvas.getContext('2d')!;
+    const depthButtons = container.querySelectorAll('[data-depth]');
+
+    let allNodes: any[] = [];
+    let allLinks: any[] = [];
+    let depth = 1;
+    let currentTransform: ZoomTransform = zoomIdentity;
+    let hoveredNode: GNode | null = null;
+    let simulation: ReturnType<typeof forceSimulation> | null = null;
+
+    function getNeighborhood(centerSlug: string, maxDepth: number) {
+      const visited = new Set<string>([centerSlug]);
+      const queue = [{ id: centerSlug, d: 0 }];
+      while (queue.length > 0) {
+        const { id, d } = queue.shift()!;
+        if (d >= maxDepth) continue;
+        for (const link of allLinks) {
+          const s = typeof link.source === 'string' ? link.source : link.source.id;
+          const t = typeof link.target === 'string' ? link.target : link.target.id;
+          const neighbor = s === id ? t : t === id ? s : null;
+          if (neighbor && !visited.has(neighbor)) {
+            visited.add(neighbor);
+            queue.push({ id: neighbor, d: d + 1 });
+          }
+        }
+      }
+
+      const nodeSet = visited;
+      const nodes: GNode[] = allNodes
+        .filter((n: any) => nodeSet.has(n.id))
+        .map((n: any) => ({ ...n, x: undefined, y: undefined }));
+      const links: GLink[] = allLinks.filter((l: any) => {
+        const s = typeof l.source === 'string' ? l.source : l.source.id;
+        const t = typeof l.target === 'string' ? l.target : l.target.id;
+        return nodeSet.has(s) && nodeSet.has(t);
+      }).map((l: any) => ({
+        source: typeof l.source === 'string' ? l.source : l.source.id,
+        target: typeof l.target === 'string' ? l.target : l.target.id,
+      }));
+
+      return { nodes, links };
+    }
+
+    function resize() {
+      const dpr = window.devicePixelRatio || 1;
+      const rect = canvas.getBoundingClientRect();
+      canvas.width = rect.width * dpr;
+      canvas.height = rect.height * dpr;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+
+    function draw(nodes: GNode[], links: GLink[]) {
+      const rect = canvas.getBoundingClientRect();
+      const w = rect.width;
+      const h = rect.height;
+
+      ctx.save();
+      ctx.clearRect(0, 0, w, h);
+      ctx.fillStyle = '#181825';
+      ctx.fillRect(0, 0, w, h);
+
+      ctx.translate(currentTransform.x, currentTransform.y);
+      ctx.scale(currentTransform.k, currentTransform.k);
+
+      // Edges
+      ctx.lineWidth = 1;
+      for (const link of links) {
+        const s = link.source as GNode;
+        const t = link.target as GNode;
+        if (s.x == null || s.y == null || t.x == null || t.y == null) continue;
+        const isHighlighted = hoveredNode && (s === hoveredNode || t === hoveredNode);
+        ctx.strokeStyle = isHighlighted ? '#89b4fa' : '#585b70';
+        ctx.globalAlpha = isHighlighted ? 0.8 : 0.4;
+        ctx.beginPath();
+        ctx.moveTo(s.x, s.y);
+        ctx.lineTo(t.x, t.y);
+        ctx.stroke();
+      }
+      ctx.globalAlpha = 1;
+
+      // Nodes
+      for (const node of nodes) {
+        if (node.x == null || node.y == null) continue;
+        const isCurrent = node.id === slug;
+        const isHov = hoveredNode === node;
+        const r = isCurrent ? 8 : isHov ? 6 : 4;
+        const color = node.tags.length > 0 ? tagColor(node.tags[0]) : '#cba6f7';
+
+        if (isCurrent) {
+          ctx.beginPath();
+          ctx.arc(node.x, node.y, r + 4, 0, Math.PI * 2);
+          ctx.fillStyle = color;
+          ctx.globalAlpha = 0.15;
+          ctx.fill();
+          ctx.globalAlpha = 1;
+        }
+
+        ctx.beginPath();
+        ctx.arc(node.x, node.y, r, 0, Math.PI * 2);
+        ctx.fillStyle = color;
+        ctx.fill();
+
+        ctx.fillStyle = isCurrent || isHov ? '#cdd6f4' : '#6c7086';
+        ctx.font = `${isCurrent ? '600 11' : '9'}px -apple-system, sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.fillText(node.label, node.x, node.y + r + 12);
+      }
+
+      ctx.restore();
+    }
+
+    function startSimulation() {
+      simulation?.stop();
+      currentTransform = zoomIdentity;
+      const { nodes, links } = getNeighborhood(slug, depth);
+      const rect = canvas.getBoundingClientRect();
+
+      simulation = forceSimulation(nodes as any)
+        .force('link', forceLink(links as any).id((d: any) => d.id).distance(60))
+        .force('charge', forceManyBody().strength(-150))
+        .force('center', forceCenter(rect.width / 2, rect.height / 2))
+        .force('collide', forceCollide(15))
+        .on('tick', () => draw(nodes, links));
+
+      // Click handling
+      canvas.onclick = (e: MouseEvent) => {
+        const r = canvas.getBoundingClientRect();
+        const [gx, gy] = currentTransform.invert([e.clientX - r.left, e.clientY - r.top]);
+        for (const n of nodes) {
+          if (n.x == null || n.y == null) continue;
+          const dx = gx - n.x;
+          const dy = gy - n.y;
+          if (dx * dx + dy * dy < 64) {
+            window.location.href = `${base}notes/${n.id}`;
+            return;
+          }
+        }
+      };
+
+      canvas.onmousemove = (e: MouseEvent) => {
+        const r = canvas.getBoundingClientRect();
+        const [gx, gy] = currentTransform.invert([e.clientX - r.left, e.clientY - r.top]);
+        let found: GNode | null = null;
+        for (const n of nodes) {
+          if (n.x == null || n.y == null) continue;
+          const dx = gx - n.x;
+          const dy = gy - n.y;
+          if (dx * dx + dy * dy < 64) { found = n; break; }
+        }
+        if (found !== hoveredNode) {
+          hoveredNode = found;
+          canvas.style.cursor = found ? 'pointer' : 'default';
+          draw(nodes, links);
+        }
+      };
+    }
+
+    // Zoom
+    const zoomBehavior = zoom<HTMLCanvasElement, unknown>()
+      .scaleExtent([0.5, 4])
+      .on('zoom', (event) => {
+        currentTransform = event.transform;
+      });
+    select(canvas).call(zoomBehavior);
+
+    // Depth buttons
+    depthButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        depth = parseInt((btn as HTMLElement).dataset.depth || '1');
+        depthButtons.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        startSimulation();
+      });
+    });
+
+    // Load and start
+    fetch(`${base}graph-data.json`)
+      .then(r => r.json())
+      .then(data => {
+        allNodes = data.nodes;
+        allLinks = data.links;
+        resize();
+        startSimulation();
+      });
+
+    window.addEventListener('resize', () => { resize(); startSimulation(); });
+  }
+</script>
