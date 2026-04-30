@@ -1,0 +1,60 @@
+---
+import { getCollection, render } from 'astro:content';
+import Base from '../../layouts/Base.astro';
+import Backlinks from '../../components/Backlinks.astro';
+import { slugify } from '../../lib/slugify';
+import { extractWikilinks } from '../../lib/graph';
+
+export async function getStaticPaths() {
+  const notes = await getCollection('notes');
+
+  // Build backlinks map
+  const backlinkMap = new Map<string, { id: string; title: string }[]>();
+
+  for (const note of notes) {
+    const links = extractWikilinks(note.body || '');
+    for (const link of links) {
+      const targetSlug = slugify(link);
+      if (!backlinkMap.has(targetSlug)) {
+        backlinkMap.set(targetSlug, []);
+      }
+      backlinkMap.get(targetSlug)!.push({
+        id: slugify(note.id),
+        title: note.data.title || note.id,
+      });
+    }
+  }
+
+  return notes
+    .filter((note) => note.data.public !== false)
+    .map((note) => ({
+      params: { slug: slugify(note.id) },
+      props: {
+        note,
+        backlinks: backlinkMap.get(slugify(note.id)) || [],
+      },
+    }));
+}
+
+const { note, backlinks } = Astro.props;
+const { Content } = await render(note);
+const title = note.data.title || note.id;
+const base = import.meta.env.BASE_URL.replace(/\/?$/, '/');
+---
+
+<Base title={title}>
+  <article>
+    <h1>{title}</h1>
+    {
+      note.data.tags && note.data.tags.length > 0 && (
+        <div class="note-tags">
+          {note.data.tags.map((tag: string) => (
+            <a href={`${base}tags/${tag}`} class="tag">{tag}</a>
+          ))}
+        </div>
+      )
+    }
+    <Content />
+  </article>
+  <Backlinks links={backlinks} />
+</Base>

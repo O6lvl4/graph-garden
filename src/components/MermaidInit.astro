@@ -1,0 +1,90 @@
+<script>
+  import mermaid from 'mermaid';
+
+  // premaid dark theme (from O6lvl4/premaid)
+  mermaid.initialize({
+    startOnLoad: false,
+    theme: 'base',
+    fontFamily: '"Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif',
+    themeVariables: {
+      fontFamily: '"Inter", system-ui, -apple-system, sans-serif',
+      fontSize: '14px',
+      darkMode: true,
+      primaryColor: '#1E293B',
+      primaryTextColor: '#E2E8F0',
+      primaryBorderColor: '#475569',
+      lineColor: '#94A3B8',
+      secondaryColor: '#0F172A',
+      tertiaryColor: '#1E293B',
+      background: '#0F172A',
+      mainBkg: '#1E293B',
+      secondBkg: '#0F172A',
+      nodeBorder: '#475569',
+      clusterBkg: '#111827',
+      clusterBorder: '#334155',
+      titleColor: '#F1F5F9',
+      edgeLabelBackground: '#0F172A',
+      actorBkg: '#1E293B',
+      actorBorder: '#475569',
+      actorTextColor: '#E2E8F0',
+      actorLineColor: '#94A3B8',
+      signalColor: '#CBD5E1',
+      signalTextColor: '#E2E8F0',
+      labelBoxBkgColor: '#312E81',
+      labelBoxBorderColor: '#6366F1',
+      labelTextColor: '#E0E7FF',
+      loopTextColor: '#E2E8F0',
+      noteBkgColor: '#422006',
+      noteBorderColor: '#F59E0B',
+      noteTextColor: '#FDE68A',
+      activationBkgColor: '#312E81',
+      activationBorderColor: '#6366F1',
+      gridColor: '#334155',
+      pie1: '#818CF8',
+      pie2: '#A78BFA',
+      pie3: '#F472B6',
+      pie4: '#FBBF24',
+      pie5: '#34D399',
+      pie6: '#22D3EE',
+      pie7: '#60A5FA',
+      pie8: '#F87171',
+      pie9: '#A3E635',
+      pie10: '#FB923C',
+      pie11: '#2DD4BF',
+      pie12: '#C084FC',
+    },
+    flowchart: {
+      curve: 'basis',
+      padding: 20,
+      nodeSpacing: 56,
+      rankSpacing: 64,
+      htmlLabels: true,
+      useMaxWidth: false,
+    },
+    sequence: {
+      actorMargin: 72,
+      boxMargin: 16,
+      noteMargin: 16,
+      messageMargin: 42,
+      boxTextMargin: 8,
+      mirrorActors: true,
+      useMaxWidth: false,
+    },
+  });
+
+  // Find mermaid code blocks and render them
+  document.querySelectorAll('pre > code.language-mermaid').forEach(async (el) => {
+    const code = el.textContent || '';
+    const pre = el.parentElement!;
+    const container = document.createElement('div');
+    container.className = 'mermaid-diagram';
+    const id = `mermaid-${Math.random().toString(36).slice(2, 8)}`;
+    try {
+      const { svg } = await mermaid.render(id, code);
+      container.innerHTML = svg;
+      pre.replaceWith(container);
+    } catch (e) {
+      console.error('Mermaid render failed:', e);
+    }
+  });
+</script>

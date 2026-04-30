@@ -1,0 +1,132 @@
+<dialog id="search-dialog">
+  <div class="search-input-wrap">
+    <input type="text" id="search-input" placeholder="Search notes..." autocomplete="off" />
+  </div>
+  <ul id="search-results" class="search-results"></ul>
+</dialog>
+
+<script>
+  const base = import.meta.env.BASE_URL.replace(/\/?$/, '/');
+  const dialog = document.getElementById('search-dialog') as HTMLDialogElement;
+  const input = document.getElementById('search-input') as HTMLInputElement;
+  const resultsList = document.getElementById('search-results') as HTMLUListElement;
+
+  let index: { slug: string; title: string; tags: string[]; excerpt: string }[] = [];
+  let activeIndex = -1;
+
+  fetch(`${base}search-index.json`)
+    .then((r) => r.json())
+    .then((data) => {
+      index = data;
+    });
+
+  document.addEventListener('keydown', (e) => {
+    if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+      e.preventDefault();
+      dialog.showModal();
+      input.focus();
+      input.value = '';
+      resultsList.innerHTML = '';
+      activeIndex = -1;
+    }
+  });
+
+  document.getElementById('search-open')?.addEventListener('click', () => {
+    dialog.showModal();
+    input.focus();
+    input.value = '';
+    resultsList.innerHTML = '';
+    activeIndex = -1;
+  });
+
+  dialog.addEventListener('click', (e) => {
+    if (e.target === dialog) dialog.close();
+  });
+
+  input.addEventListener('input', () => {
+    const q = input.value.trim().toLowerCase();
+    if (!q) {
+      resultsList.innerHTML = '';
+      activeIndex = -1;
+      return;
+    }
+
+    const results = index
+      .map((item) => ({
+        ...item,
+        score: fuzzyScore(q, `${item.title} ${item.tags.join(' ')} ${item.excerpt}`.toLowerCase()),
+      }))
+      .filter((r) => r.score > 0)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 10);
+
+    activeIndex = results.length > 0 ? 0 : -1;
+    renderResults(results);
+  });
+
+  input.addEventListener('keydown', (e) => {
+    const items = resultsList.querySelectorAll('li[data-slug]');
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      activeIndex = Math.min(activeIndex + 1, items.length - 1);
+      updateActive(items);
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      activeIndex = Math.max(activeIndex - 1, 0);
+      updateActive(items);
+    } else if (e.key === 'Enter' && activeIndex >= 0 && items[activeIndex]) {
+      e.preventDefault();
+      const slug = items[activeIndex].getAttribute('data-slug');
+      if (slug) {
+        dialog.close();
+        window.location.href = `${base}notes/${slug}`;
+      }
+    } else if (e.key === 'Escape') {
+      dialog.close();
+    }
+  });
+
+  function renderResults(results: typeof index) {
+    if (results.length === 0) {
+      resultsList.innerHTML = '<li class="search-empty">No results found</li>';
+      return;
+    }
+    resultsList.innerHTML = results
+      .map(
+        (r, i) => `
+        <li data-slug="${esc(r.slug)}" class="${i === activeIndex ? 'active' : ''}">
+          <span class="title">${esc(r.title)}</span>
+          <span class="excerpt">${esc(r.excerpt.slice(0, 100))}</span>
+        </li>`
+      )
+      .join('');
+
+    resultsList.querySelectorAll('li[data-slug]').forEach((li) => {
+      li.addEventListener('click', () => {
+        const slug = li.getAttribute('data-slug');
+        if (slug) {
+          dialog.close();
+          window.location.href = `${base}notes/${slug}`;
+        }
+      });
+    });
+  }
+
+  function updateActive(items: NodeListOf<Element>) {
+    items.forEach((item, i) => item.classList.toggle('active', i === activeIndex));
+    items[activeIndex]?.scrollIntoView({ block: 'nearest' });
+  }
+
+  function fuzzyScore(query: string, text: string): number {
+    if (text.includes(query)) return 100 + 1 / text.length;
+    let qi = 0;
+    for (let i = 0; i < text.length && qi < query.length; i++) {
+      if (text[i] === query[qi]) qi++;
+    }
+    return qi === query.length ? qi : 0;
+  }
+
+  function esc(s: string): string {
+    return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+</script>

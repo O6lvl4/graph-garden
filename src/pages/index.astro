@@ -1,0 +1,31 @@
+---
+import { getCollection } from 'astro:content';
+import Base from '../layouts/Base.astro';
+import { slugify } from '../lib/slugify';
+
+const notes = await getCollection('notes', ({ data }) => data.public !== false);
+const sorted = notes.sort((a, b) => {
+  const ta = a.data.title || a.id;
+  const tb = b.data.title || b.id;
+  return ta.localeCompare(tb);
+});
+const base = import.meta.env.BASE_URL.replace(/\/?$/, '/');
+---
+
+<Base title="Notes">
+  <div class="note-list">
+    <h1>Notes</h1>
+    {
+      sorted.map((note) => (
+        <a href={`${base}notes/${slugify(note.id)}`} class="note-card">
+          <span class="title">{note.data.title || note.id}</span>
+          <span class="meta">
+            {(note.data.tags || []).map((tag) => (
+              <span class="tag">{tag}</span>
+            ))}
+          </span>
+        </a>
+      ))
+    }
+  </div>
+</Base>

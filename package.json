@@ -1,0 +1,43 @@
+{
+  "name": "@o6lvl4/graph-garden",
+  "version": "0.1.0",
+  "description": "Astro integration that turns a markdown vault into a static knowledge base with bidirectional links and graph visualization",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./components/*": "./src/components/*",
+    "./layouts/*": "./src/layouts/*"
+  },
+  "files": [
+    "src",
+    "assets"
+  ],
+  "keywords": [
+    "astro",
+    "astro-integration",
+    "obsidian",
+    "knowledge-base",
+    "graph",
+    "wikilinks",
+    "digital-garden"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/O6lvl4/graph-garden.git"
+  },
+  "peerDependencies": {
+    "astro": "^5.0.0"
+  },
+  "dependencies": {
+    "d3-force": "^3.0.0",
+    "d3-selection": "^3.0.0",
+    "d3-zoom": "^3.0.0",
+    "mermaid": "^11.14.0",
+    "unist-util-visit": "^5.0.0"
+  },
+  "devDependencies": {
+    "astro": "^5.0.0",
+    "typescript": "^5.7.0"
+  }
+}

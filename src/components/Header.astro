@@ -1,0 +1,21 @@
+---
+// @ts-ignore virtual module
+import { title } from 'virtual:graph-garden/config';
+const base = import.meta.env.BASE_URL.replace(/\/?$/, '/');
+---
+
+<header class="header">
+  <div class="header-left">
+    <a href={base} class="header-logo">{title}</a>
+    <nav class="header-nav">
+      <a href={`${base}tags`}>Tags</a>
+      <a href={`${base}graph`}>Graph</a>
+    </nav>
+  </div>
+  <div class="header-right">
+    <button class="search-trigger" id="search-open" type="button">
+      <span>Search</span>
+      <kbd>&#8984;K</kbd>
+    </button>
+  </div>
+</header>
