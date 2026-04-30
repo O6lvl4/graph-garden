@@ -227,8 +227,10 @@ article img {
 .mermaid-diagram svg {
   max-width: 100%;
   height: auto;
+  overflow: visible;
 }
 
+/* premaid darkCss - node styling */
 .mermaid-diagram .node rect,
 .mermaid-diagram .node polygon,
 .mermaid-diagram .node circle,
@@ -244,28 +246,148 @@ article img {
   ry: 10;
 }
 
+/* premaid darkCss - edge styling */
 .mermaid-diagram .edgePath path.path,
 .mermaid-diagram .flowchart-link {
   stroke-width: 1.5px !important;
   stroke-linecap: round !important;
+  stroke-linejoin: round !important;
 }
 
+.mermaid-diagram .arrowheadPath,
+.mermaid-diagram marker path {
+  stroke-width: 0 !important;
+}
+
+/* premaid darkCss - edge labels */
+.mermaid-diagram .edgeLabel,
+.mermaid-diagram .edgeLabel div,
+.mermaid-diagram .edgeLabel span {
+  background-color: rgba(15, 23, 42, 0.96) !important;
+  color: #cbd5e1 !important;
+  font-size: 12px !important;
+}
+
+.mermaid-diagram .edgeLabel {
+  padding: 2px 8px !important;
+  border-radius: 999px !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+}
+
+/* premaid darkCss - cluster */
 .mermaid-diagram .cluster rect {
   rx: 14 !important;
   ry: 14 !important;
   stroke-width: 1px !important;
 }
 
+.mermaid-diagram .cluster-label .nodeLabel,
+.mermaid-diagram .cluster text {
+  font-weight: 600 !important;
+  fill: #f1f5f9 !important;
+  color: #f1f5f9 !important;
+}
+
+/* premaid darkCss - font unification */
 .mermaid-diagram .nodeLabel,
 .mermaid-diagram .edgeLabel,
 .mermaid-diagram .cluster text,
 .mermaid-diagram .actor,
+.mermaid-diagram text.actor > tspan,
 .mermaid-diagram .messageText,
+.mermaid-diagram .loopText,
 .mermaid-diagram .noteText,
 .mermaid-diagram .labelText,
+.mermaid-diagram .sectionTitle,
 .mermaid-diagram .titleText,
-.mermaid-diagram .taskText {
+.mermaid-diagram .taskText,
+.mermaid-diagram .grid text {
   font-family: 'Inter', system-ui, sans-serif !important;
+}
+
+/* premaid darkCss - sequence diagram actors */
+.mermaid-diagram .actor {
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.5));
+  stroke-width: 1.2px !important;
+}
+
+.mermaid-diagram .actor-line {
+  stroke-width: 1px !important;
+  stroke-dasharray: 2 4 !important;
+}
+
+/* premaid darkCss - sequence activations */
+.mermaid-diagram rect.activation0,
+.mermaid-diagram rect.activation1,
+.mermaid-diagram rect.activation2 {
+  fill: #312e81 !important;
+  stroke: #6366f1 !important;
+}
+
+/* premaid darkCss - sequence messages */
+.mermaid-diagram .messageLine0,
+.mermaid-diagram .messageLine1,
+.mermaid-diagram line.messageLine0,
+.mermaid-diagram line.messageLine1,
+.mermaid-diagram path.messageLine0,
+.mermaid-diagram path.messageLine1 {
+  stroke: #818cf8 !important;
+  stroke-width: 1.5px !important;
+}
+
+/* premaid darkCss - sequence loop/opt labels */
+.mermaid-diagram rect.labelBox {
+  fill: #312e81 !important;
+  stroke: #6366f1 !important;
+  rx: 6 !important;
+  ry: 6 !important;
+}
+
+/* premaid darkCss - notes */
+.mermaid-diagram .note,
+.mermaid-diagram g.note rect {
+  filter: drop-shadow(0 2px 6px rgba(234, 179, 8, 0.2));
+  rx: 10 !important;
+  ry: 10 !important;
+}
+
+.mermaid-diagram .noteText,
+.mermaid-diagram g.note text {
+  font-size: 13px !important;
+  font-weight: 500 !important;
+}
+
+/* premaid darkCss - flowchart subgraph */
+.mermaid-diagram .flowchart g.cluster rect {
+  fill: #111827 !important;
+  stroke: #334155 !important;
+  stroke-dasharray: 4 4 !important;
+}
+
+/* premaid darkCss - gitgraph */
+.mermaid-diagram .branch-label rect,
+.mermaid-diagram .commit-label rect,
+.mermaid-diagram .tag-label rect {
+  rx: 8 !important;
+  ry: 8 !important;
+  stroke-width: 0 !important;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3));
+}
+
+.mermaid-diagram .branch-label text {
+  font-weight: 600 !important;
+  fill: #ffffff !important;
+}
+
+.mermaid-diagram .branch0, .mermaid-diagram .branch1,
+.mermaid-diagram .branch2, .mermaid-diagram .branch3 {
+  stroke-width: 4px !important;
+  stroke-linecap: round !important;
+}
+
+.mermaid-diagram circle.commit {
+  stroke-width: 3px !important;
+  stroke: #ffffff !important;
 }
 
 article hr {
