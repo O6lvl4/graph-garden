@@ -2,7 +2,7 @@ import { getCollection } from 'astro:content';
 import { buildGraphData } from '../lib/graph';
 
 export async function GET() {
-  const notes = await getCollection('notes', ({ data }) => data.public !== false);
+  const notes = await getCollection('notes', ({ id, data }) => data.public !== false && id !== 'index');
   const graphData = buildGraphData(
     notes.map((n) => ({
       id: n.id,
