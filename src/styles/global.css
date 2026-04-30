@@ -227,7 +227,6 @@ article img {
 .mermaid-diagram svg {
   max-width: 100%;
   height: auto;
-  overflow: visible;
 }
 
 /* premaid darkCss - node styling */
