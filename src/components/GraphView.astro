@@ -9,8 +9,47 @@
     <button id="graph-zoom-out" type="button" title="Zoom out">&minus;</button>
     <button id="graph-center" type="button" title="Center">&#9675;</button>
   </div>
-  <div id="graph-legend" class="graph-legend"></div>
+  <div class="graph-legend-wrapper" data-collapsed="true">
+    <button
+      id="graph-legend-toggle"
+      class="graph-legend-toggle"
+      type="button"
+      aria-controls="graph-legend"
+      aria-expanded="false"
+      title="タグ一覧の表示切替"
+    >
+      <span class="graph-legend-toggle-icon" aria-hidden="true">#</span>
+      <span class="graph-legend-toggle-label">タグ</span>
+    </button>
+    <div id="graph-legend" class="graph-legend" hidden></div>
+  </div>
 </div>
+
+<script>
+  const wrapper = document.querySelector('.graph-legend-wrapper') as HTMLElement | null;
+  const toggle = document.getElementById('graph-legend-toggle');
+  const legend = document.getElementById('graph-legend');
+  const mq = window.matchMedia('(max-width: 768px)');
+
+  function applyState(collapsed: boolean) {
+    if (!wrapper || !toggle || !legend) return;
+    wrapper.dataset.collapsed = String(collapsed);
+    toggle.setAttribute('aria-expanded', String(!collapsed));
+    if (collapsed) legend.setAttribute('hidden', '');
+    else legend.removeAttribute('hidden');
+  }
+
+  // Default: collapsed on mobile, expanded on desktop
+  applyState(mq.matches);
+
+  toggle?.addEventListener('click', () => {
+    const collapsed = wrapper?.dataset.collapsed === 'true';
+    applyState(!collapsed);
+  });
+
+  // When the viewport crosses the breakpoint, snap back to the platform default
+  mq.addEventListener('change', (e) => applyState(e.matches));
+</script>
 
 <script>
   import {

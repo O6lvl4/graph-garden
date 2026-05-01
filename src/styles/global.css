@@ -612,10 +612,44 @@ a.tag:hover {
   padding: 0.1em 0.4em;
 }
 
-.graph-legend {
+.graph-legend-wrapper {
   position: absolute;
   bottom: 1rem;
   left: 1rem;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.4rem;
+  z-index: 5;
+}
+
+.graph-legend-toggle {
+  display: none;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.4rem 0.7rem;
+  font-size: 0.8rem;
+  color: var(--text, #cdd6f4);
+  background: rgba(30, 30, 46, 0.9);
+  border: 1px solid var(--border, #313244);
+  border-radius: 999px;
+  cursor: pointer;
+  backdrop-filter: blur(4px);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.graph-legend-toggle:hover,
+.graph-legend-toggle:focus-visible {
+  background: rgba(49, 50, 68, 0.95);
+  outline: none;
+}
+
+.graph-legend-toggle-icon {
+  font-weight: 700;
+  color: var(--text-muted, #6c7086);
+}
+
+.graph-legend {
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
@@ -629,6 +663,20 @@ a.tag:hover {
   backdrop-filter: blur(4px);
   scrollbar-width: thin;
   scrollbar-color: var(--text-muted) transparent;
+}
+
+.graph-legend[hidden] {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .graph-legend-toggle {
+    display: inline-flex;
+  }
+  .graph-legend {
+    max-width: min(80vw, 260px);
+    max-height: min(50vh, 320px);
+  }
 }
 
 .graph-legend::-webkit-scrollbar {
