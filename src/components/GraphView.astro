@@ -311,8 +311,9 @@
   function buildLegend() {
     const tags = [...tagColorMap.entries()];
     if (tags.length === 0) return;
+    tags.sort(([a], [b]) => a.localeCompare(b));
     legendEl.innerHTML = tags.map(([tag, color]) =>
-      `<span class="graph-legend-item"><span class="graph-legend-dot" style="background:${color}"></span>${esc(tag)}</span>`
+      `<a class="graph-legend-item" href="${base}tags/${encodeURIComponent(tag)}" title="${esc(tag)} のタグページへ"><span class="graph-legend-dot" style="background:${color}"></span>${esc(tag)}</a>`
     ).join('');
   }
 

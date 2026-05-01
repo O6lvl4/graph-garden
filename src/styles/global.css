@@ -617,17 +617,44 @@ a.tag:hover {
   bottom: 1rem;
   left: 1rem;
   display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  max-width: 300px;
+  flex-direction: column;
+  gap: 0.25rem;
+  max-width: 220px;
+  max-height: min(50vh, 360px);
+  overflow-y: auto;
+  padding: 0.5rem 0.75rem;
+  background: rgba(30, 30, 46, 0.85);
+  border: 1px solid var(--border, #313244);
+  border-radius: 6px;
+  backdrop-filter: blur(4px);
+  scrollbar-width: thin;
+  scrollbar-color: var(--text-muted) transparent;
+}
+
+.graph-legend::-webkit-scrollbar {
+  width: 6px;
+}
+
+.graph-legend::-webkit-scrollbar-thumb {
+  background: var(--text-muted);
+  border-radius: 3px;
 }
 
 .graph-legend-item {
   display: inline-flex;
   align-items: center;
-  gap: 0.3rem;
+  gap: 0.4rem;
   font-size: 0.75rem;
   color: var(--text-muted);
+  text-decoration: none;
+  padding: 0.15rem 0.25rem;
+  border-radius: 3px;
+  transition: background 0.15s, color 0.15s;
+}
+
+.graph-legend-item:hover {
+  color: var(--text, #cdd6f4);
+  background: rgba(137, 180, 250, 0.12);
 }
 
 .graph-legend-dot {
