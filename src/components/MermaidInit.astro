@@ -1,5 +1,9 @@
 <script>
-  import mermaid from 'mermaid';
+  // Use the ESM bundle (auto-registers all diagram types).
+  // The default `mermaid` export points to `mermaid.core.mjs` in v11, which
+  // requires manual diagram registration and silently fails to render
+  // flowchart/sequence/etc. Importing the bundled entry restores v10 behavior.
+  import mermaid from 'mermaid/dist/mermaid.esm.mjs';
 
   // premaid dark theme (from O6lvl4/premaid)
   mermaid.initialize({
