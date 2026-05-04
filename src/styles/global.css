@@ -688,6 +688,18 @@ a.tag:hover {
   border-radius: 3px;
 }
 
+.graph-legend-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.graph-legend-section + .graph-legend-section {
+  margin-top: 0.6rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--border, #313244);
+}
+
 .graph-legend-item {
   display: inline-flex;
   align-items: center;
@@ -703,6 +715,11 @@ a.tag:hover {
 .graph-legend-item:hover {
   color: var(--text, #cdd6f4);
   background: rgba(137, 180, 250, 0.12);
+}
+
+.graph-legend-srs {
+  font-weight: 600;
+  color: var(--text, #cdd6f4);
 }
 
 .graph-legend-dot {

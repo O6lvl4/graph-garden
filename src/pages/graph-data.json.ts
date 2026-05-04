@@ -6,7 +6,13 @@ export async function GET() {
   const graphData = buildGraphData(
     notes.map((n) => ({
       id: n.id,
-      data: { title: n.data.title, tags: n.data.tags },
+      data: {
+        title: n.data.title,
+        tags: n.data.tags,
+        srs_state: (n.data as { srs_state?: 'new' | 'learning' | 'settling' | 'settled' }).srs_state,
+        retention: (n.data as { retention?: number }).retention,
+        card_count: (n.data as { card_count?: number }).card_count,
+      },
       body: n.body,
     }))
   );

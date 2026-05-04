@@ -102,6 +102,9 @@
     tags: string[];
     excerpt: string;
     linkCount: number;
+    srs_state?: 'new' | 'learning' | 'settling' | 'settled';
+    retention?: number;
+    card_count?: number;
     x?: number;
     y?: number;
     vx?: number;
@@ -109,6 +112,20 @@
     fx?: number | null;
     fy?: number | null;
   }
+
+  const SRS_COLORS: Record<string, string> = {
+    new:      '#74c7ec', // sapphire (Catppuccin Mocha)
+    learning: '#f38ba8', // red
+    settling: '#f9e2af', // yellow
+    settled:  '#a6e3a1', // green
+  };
+
+  const SRS_LABELS: Record<string, string> = {
+    new:      'new',
+    learning: 'learning',
+    settling: 'settling',
+    settled:  'settled',
+  };
 
   interface GLink {
     source: string | GNode;
@@ -127,6 +144,7 @@
   }
 
   function nodeColor(n: GNode): string {
+    if (n.srs_state && SRS_COLORS[n.srs_state]) return SRS_COLORS[n.srs_state];
     if (n.tags.length > 0) return tagColor(n.tags[0]);
     return '#cba6f7';
   }
@@ -346,14 +364,35 @@
     select(canvas).transition().duration(300).call(zoomBehavior.transform, zoomIdentity);
   });
 
-  // Build legend
+  // Build legend. Two sections: SRS state (if any node has it) above
+  // tag colors. SRS dots take precedence in node coloring, so they are
+  // shown first.
   function buildLegend() {
+    const parts: string[] = [];
+
+    const srsStates = new Set(nodes.map((n) => n.srs_state).filter((s): s is string => !!s));
+    if (srsStates.size > 0) {
+      const order: string[] = ['new', 'learning', 'settling', 'settled'];
+      const srsRows = order
+        .filter((s) => srsStates.has(s))
+        .map((s) =>
+          `<span class="graph-legend-item graph-legend-srs"><span class="graph-legend-dot" style="background:${SRS_COLORS[s]}"></span>${esc(SRS_LABELS[s])}</span>`
+        )
+        .join('');
+      parts.push(`<div class="graph-legend-section graph-legend-section-srs">${srsRows}</div>`);
+    }
+
     const tags = [...tagColorMap.entries()];
-    if (tags.length === 0) return;
-    tags.sort(([a], [b]) => a.localeCompare(b));
-    legendEl.innerHTML = tags.map(([tag, color]) =>
-      `<a class="graph-legend-item" href="${base}tags/${encodeURIComponent(tag)}" title="${esc(tag)} のタグページへ"><span class="graph-legend-dot" style="background:${color}"></span>${esc(tag)}</a>`
-    ).join('');
+    if (tags.length > 0) {
+      tags.sort(([a], [b]) => a.localeCompare(b));
+      const tagRows = tags.map(([tag, color]) =>
+        `<a class="graph-legend-item" href="${base}tags/${encodeURIComponent(tag)}" title="${esc(tag)} のタグページへ"><span class="graph-legend-dot" style="background:${color}"></span>${esc(tag)}</a>`
+      ).join('');
+      parts.push(`<div class="graph-legend-section">${tagRows}</div>`);
+    }
+
+    if (parts.length === 0) return;
+    legendEl.innerHTML = parts.join('');
   }
 
   // Load data
