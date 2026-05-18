@@ -32,7 +32,7 @@ const sorted = notes.sort((a: any, b: any) => {
 });
 ---
 
-<Base title={`#${tag}`}>
+<Base title={`#${tag}`} description={`${notes.length} notes tagged with #${tag}`} canonicalPath={`/tags/${tag}`}>
   <div class="note-list">
     <h1>
       <a href={`${base}tags`} class="back-link">&larr; Tags</a>
