@@ -11,17 +11,26 @@ import { fileURLToPath } from 'node:url';
 import { basename, join, resolve } from 'node:path';
 import { remarkWikilinks } from './lib/remark-wikilinks.js';
 
+export interface NavLink {
+  /** Link label */
+  label: string;
+  /** URL path (relative to base) */
+  href: string;
+}
+
 export interface GraphGardenConfig {
   /** Path to the markdown vault directory (relative to project root) */
   vault: string;
   /** Site title shown in the header */
   title?: string;
+  /** Additional navigation links in the header */
+  navLinks?: NavLink[];
   /** Additional Shiki languages for syntax highlighting */
   langs?: any[];
 }
 
 export default function graphGarden(config: GraphGardenConfig): AstroIntegration {
-  const { vault, title = 'Knowledge', langs = [] } = config;
+  const { vault, title = 'Knowledge', navLinks = [], langs = [] } = config;
 
   const pkgDir = new URL('./', import.meta.url);
   const almideGrammar = JSON.parse(
@@ -68,7 +77,7 @@ export default function graphGarden(config: GraphGardenConfig): AstroIntegration
                 },
                 load(id: string) {
                   if (id === '\0virtual:graph-garden/config') {
-                    return `export const title = ${JSON.stringify(title)};`;
+                    return `export const title = ${JSON.stringify(title)};\nexport const navLinks = ${JSON.stringify(navLinks)};`;
                   }
                 },
               },
