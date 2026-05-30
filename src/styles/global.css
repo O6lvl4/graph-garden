@@ -30,6 +30,11 @@
 
 html {
   color-scheme: dark;
+  /* Base size: 16px reads a touch large for dense content; 15px matches
+     common doc-SSG conventions (VitePress/Starlight-ish) and scales all rem. */
+  font-size: 15px;
+  /* Never let a stray wide element force horizontal page scroll on mobile. */
+  overflow-x: hidden;
 }
 
 body {
@@ -38,6 +43,8 @@ body {
   color: var(--text-primary);
   line-height: 1.7;
   -webkit-font-smoothing: antialiased;
+  /* Long URLs / unbreakable tokens wrap instead of overflowing. */
+  overflow-wrap: break-word;
 }
 
 a {
@@ -394,8 +401,13 @@ article hr {
   margin: 2rem 0;
 }
 
+/* Tables scroll within their own box instead of widening the page.
+   display:block makes overflow-x effective; narrow tables stay content-width,
+   wide ones (many columns) scroll horizontally — the Docusaurus/Starlight pattern. */
 article table {
-  width: 100%;
+  display: block;
+  overflow-x: auto;
+  max-width: 100%;
   border-collapse: collapse;
   margin: 1rem 0;
 }
