@@ -17,8 +17,9 @@ const extraLinks = (navLinks || []) as { label: string; href: string }[];
     </nav>
   </div>
   <div class="header-right">
-    <button class="search-trigger" id="search-open" type="button">
-      <span>Search</span>
+    <button class="search-trigger" id="search-open" type="button" aria-label="Search">
+      <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></svg>
+      <span class="search-label">Search</span>
       <kbd>&#8984;K</kbd>
     </button>
   </div>
